@@ -13,9 +13,10 @@ export class Game {
   static CHAOS_DURATION_MS = 4000;
   static CHAOS_SHAKE_MS = 2000;
   static CHAOS_COOLDOWN_MS = 2000;
-  static DRUNK_FORCE = 700;
-  static FRIDGE_W = 50;
-  static FRIDGE_H = 80;
+  static DRUNK_FORCE = 5000;
+  static DRUNK_KICK_INTERVAL_MS = 350;
+  static FRIDGE_W = 90;
+  static FRIDGE_H = 160;
   static CHAOS_EFFECTS = ['screenShake', 'drunkBall', 'fridge'];
 
   constructor({ role }) {
@@ -75,6 +76,7 @@ export class Game {
     this._remote = null;
     this._events.length = 0;
     this._chaosCooldownUntil = 0;
+    this._drunkNextKick = undefined;
   }
 
   _serve(dir) {
@@ -116,7 +118,13 @@ export class Game {
     this._updateChaos(now);
 
     if (this.chaos.effect === 'drunkBall' && this.chaos.expiresAt > now) {
-      b.vy += (Math.random() * 2 - 1) * Game.DRUNK_FORCE * dt;
+      if (!this._drunkNextKick) this._drunkNextKick = now;
+      if (now >= this._drunkNextKick) {
+        b.vy += (Math.random() * 2 - 1) * Game.DRUNK_FORCE * 0.05;
+        this._drunkNextKick = now + Game.DRUNK_KICK_INTERVAL_MS;
+      }
+    } else if (this._drunkNextKick !== undefined) {
+      this._drunkNextKick = undefined;
     }
 
     if (b.y - b.r <= 0) {
@@ -317,11 +325,14 @@ export class Game {
     this._chaosCooldownUntil = now + durationMs + Game.CHAOS_COOLDOWN_MS;
 
     if (effect === 'fridge') {
-      const halfCenter = target === 'p1' ? this.field.w * 0.25 : this.field.w * 0.75;
+      const sideX = target === 'p1' ? this.field.w * 0.22 : this.field.w * 0.78;
+      const targetY = this.ball.y;
+      const halfH = Game.FRIDGE_H / 2;
+      const clampedY = Math.max(halfH, Math.min(this.field.h - halfH, targetY));
       this.fridge = {
         active: true,
-        x: halfCenter - Game.FRIDGE_W / 2,
-        y: this.field.h / 2 - Game.FRIDGE_H / 2,
+        x: sideX - Game.FRIDGE_W / 2,
+        y: clampedY - halfH,
         w: Game.FRIDGE_W,
         h: Game.FRIDGE_H
       };
