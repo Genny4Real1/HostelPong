@@ -71,6 +71,8 @@ export class NetworkManager {
   onMatchEnd(cb) { return this.on('matchEnd', cb); }
   onOpponentLeft(cb) { return this.on('opponentLeft', cb); }
   onRematch(cb) { return this.on('rematch', cb); }
+  onChaosTrigger(cb) { return this.on('chaosTrigger', cb); }
+  onSfxEvent(cb) { return this.on('sfxEvent', cb); }
 
   createRoom() {
     this.socket?.emit('createRoom');

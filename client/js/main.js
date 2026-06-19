@@ -98,9 +98,28 @@ function frame(now) {
         net.sendBallState(game.getSnapshot());
       }
     }
-    if (state.renderer) state.renderer.draw(game.getSnapshot());
+    if (state.renderer) {
+      const viewport = computeViewport(game);
+      state.renderer.draw(game.getSnapshot(), viewport);
+    }
   }
   rafId = requestAnimationFrame(frame);
+}
+
+function computeViewport(game) {
+  const chaos = game.chaos;
+  if (!chaos || !chaos.effect || !chaos.expiresAt) return {};
+  const now = Date.now();
+  if (chaos.expiresAt <= now) return {};
+  if (chaos.effect !== 'screenShake') return {};
+  if (chaos.target !== game.localKey) return {};
+  const remaining = (chaos.expiresAt - now) / 1000;
+  const intensity = Math.min(1, remaining / 0.5);
+  const magnitude = 14 * intensity;
+  return {
+    shakeX: (Math.random() * 2 - 1) * magnitude,
+    shakeY: (Math.random() * 2 - 1) * magnitude
+  };
 }
 
 function flushEvents(game) {
@@ -112,6 +131,8 @@ function flushEvents(game) {
     } else if (ev.type === 'matchEnd') {
       net.sendMatchEnd(ev.winner);
       endMatch(ev.winner);
+    } else if (ev.type === 'chaosTrigger') {
+      net.sendChaosTrigger({ effect: ev.effect, target: ev.target, durationMs: ev.durationMs });
     }
   }
 }
@@ -255,6 +276,10 @@ net.onPaddleInput((payload) => {
 
 net.onScoreUpdate((score) => {
   updateScoreHud(score);
+});
+
+net.onChaosTrigger((payload) => {
+  console.log('[Main] chaosTrigger:', payload?.effect, 'target:', payload?.target);
 });
 
 net.onMatchEnd((payload) => {
