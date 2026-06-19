@@ -8,6 +8,7 @@ export class Game {
   static BASE_SPEED = 420;
   static MAX_BALL_SPEED = 900;
   static SPEED_STEP = 1.06;
+  static MAX_BOUNCE_ANGLE = (5 * Math.PI) / 12;
   static WIN_SCORE = 5;
 
   constructor({ role }) {
@@ -30,7 +31,9 @@ export class Game {
     this.ball = { x: Game.FIELD_W / 2, y: Game.FIELD_H / 2, vx: 0, vy: 0, r: Game.BALL_R };
     this.scores = { p1: 0, p2: 0 };
     this.running = false;
+    this.winner = null;
     this._remote = null;
+    this._events = [];
   }
 
   get localKey() {
@@ -54,7 +57,9 @@ export class Game {
     this.ball.y = this.field.h / 2;
     this.ball.vx = 0;
     this.ball.vy = 0;
+    this.winner = null;
     this._remote = null;
+    this._events.length = 0;
   }
 
   _serve(dir) {
@@ -65,6 +70,12 @@ export class Game {
     this.ball.vy = Math.sin(angle) * Game.BASE_SPEED;
   }
 
+  consumeEvents() {
+    const ev = this._events;
+    this._events = [];
+    return ev;
+  }
+
   setPaddleY(which, y) {
     const p = this.paddles[which];
     if (!p) return;
@@ -73,13 +84,85 @@ export class Game {
 
   update(dt) {
     if (!this.running) return;
-    if (this.role === 'host') {
-      this.ball.x += this.ball.vx * dt;
-      this.ball.y += this.ball.vy * dt;
-    } else if (this._remote) {
-      const k = 1 - Math.pow(0.0001, dt);
-      this.ball.x += (this._remote.ball.x - this.ball.x) * k;
-      this.ball.y += (this._remote.ball.y - this.ball.y) * k;
+    if (this.role !== 'host') {
+      if (this._remote) {
+        const k = 1 - Math.pow(0.0001, dt);
+        this.ball.x += (this._remote.ball.x - this.ball.x) * k;
+        this.ball.y += (this._remote.ball.y - this.ball.y) * k;
+      }
+      return;
+    }
+
+    const b = this.ball;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+
+    if (b.y - b.r <= 0) {
+      b.y = b.r;
+      b.vy = -b.vy;
+      this._accelerate();
+      this._events.push({ type: 'wallHit' });
+    } else if (b.y + b.r >= this.field.h) {
+      b.y = this.field.h - b.r;
+      b.vy = -b.vy;
+      this._accelerate();
+      this._events.push({ type: 'wallHit' });
+    }
+
+    this._checkPaddle('p1', +1);
+    this._checkPaddle('p2', -1);
+
+    if (b.x + b.r < 0) {
+      this._scorePoint('p2');
+    } else if (b.x - b.r > this.field.w) {
+      this._scorePoint('p1');
+    }
+  }
+
+  _accelerate() {
+    const b = this.ball;
+    const speed = Math.hypot(b.vx, b.vy);
+    if (speed === 0) return;
+    const newSpeed = Math.min(speed * Game.SPEED_STEP, Game.MAX_BALL_SPEED);
+    b.vx = (b.vx / speed) * newSpeed;
+    b.vy = (b.vy / speed) * newSpeed;
+  }
+
+  _checkPaddle(which, dirSign) {
+    const b = this.ball;
+    const p = this.paddles[which];
+    const movingToward = (dirSign > 0 && b.vx < 0) || (dirSign < 0 && b.vx > 0);
+    if (!movingToward) return;
+    const faceX = dirSign > 0 ? p.x + p.w : p.x;
+    const prevX = b.x - b.vx * (1 / 60);
+    const crossed = (dirSign > 0 && b.x - b.r <= faceX && prevX - b.r > faceX) ||
+                    (dirSign < 0 && b.x + b.r >= faceX && prevX + b.r < faceX);
+    if (!crossed) return;
+    if (b.y + b.r < p.y || b.y - b.r > p.y + p.h) return;
+
+    if (dirSign > 0) b.x = faceX + b.r;
+    else b.x = faceX - b.r;
+
+    const rel = (b.y - (p.y + p.h / 2)) / (p.h / 2);
+    const clamped = Math.max(-1, Math.min(1, rel));
+    const angle = clamped * Game.MAX_BOUNCE_ANGLE;
+    const speed = Math.hypot(b.vx, b.vy);
+    const newSpeed = Math.min(speed * Game.SPEED_STEP, Game.MAX_BALL_SPEED);
+    b.vx = Math.cos(angle) * newSpeed * dirSign;
+    b.vy = Math.sin(angle) * newSpeed;
+    this._events.push({ type: 'paddleHit', which });
+  }
+
+  _scorePoint(scorer) {
+    this.scores[scorer] = (this.scores[scorer] || 0) + 1;
+    this._events.push({ type: 'score', scorer, scores: { p1: this.scores.p1, p2: this.scores.p2 } });
+    if (this.scores[scorer] >= Game.WIN_SCORE) {
+      this.running = false;
+      this.winner = scorer;
+      this._events.push({ type: 'matchEnd', winner: scorer });
+    } else {
+      const dir = scorer === 'p1' ? +1 : -1;
+      this._serve(dir);
     }
   }
 
@@ -92,7 +175,8 @@ export class Game {
       },
       ball: { x: this.ball.x, y: this.ball.y, r: this.ball.r },
       scores: { p1: this.scores.p1, p2: this.scores.p2 },
-      running: this.running
+      running: this.running,
+      winner: this.winner
     };
   }
 
@@ -110,5 +194,6 @@ export class Game {
       };
     }
     if (typeof s.running === 'boolean') this.running = s.running;
+    if (s.winner) this.winner = s.winner;
   }
 }

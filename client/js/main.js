@@ -91,6 +91,7 @@ function frame(now) {
   if (game) {
     game.update(dt);
     if (state.role === 'host') {
+      flushEvents(game);
       broadcastAcc += dt;
       if (broadcastAcc >= 1 / BROADCAST_HZ) {
         broadcastAcc = 0;
@@ -100,6 +101,19 @@ function frame(now) {
     if (state.renderer) state.renderer.draw(game.getSnapshot());
   }
   rafId = requestAnimationFrame(frame);
+}
+
+function flushEvents(game) {
+  const events = game.consumeEvents();
+  for (const ev of events) {
+    if (ev.type === 'score') {
+      updateScoreHud(ev.scores);
+      net.sendScore(ev.scores);
+    } else if (ev.type === 'matchEnd') {
+      net.sendMatchEnd(ev.winner);
+      endMatch(ev.winner);
+    }
+  }
 }
 
 function startLoop() {
