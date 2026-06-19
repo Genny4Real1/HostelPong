@@ -2,8 +2,10 @@ import { NetworkManager } from './NetworkManager.js';
 import { Game } from './Game.js';
 import { Renderer } from './Renderer.js';
 import { TouchDragInput } from './TouchDragInput.js';
+import { AudioManager } from './AudioManager.js';
 
 const net = new NetworkManager();
+const audio = new AudioManager();
 
 const BROADCAST_HZ = 30;
 let rafId = null;
@@ -32,6 +34,7 @@ const dom = {
   btnCreate: document.getElementById('btn-create'),
   btnJoin: document.getElementById('btn-join'),
   joinCode: document.getElementById('join-code'),
+  btnMute: document.getElementById('btn-mute'),
   menuError: document.getElementById('menu-error'),
   lobbyCode: document.getElementById('lobby-code'),
   qrcode: document.getElementById('qrcode'),
@@ -131,8 +134,18 @@ function flushEvents(game) {
     } else if (ev.type === 'matchEnd') {
       net.sendMatchEnd(ev.winner);
       endMatch(ev.winner);
+    } else if (ev.type === 'paddleHit') {
+      audio.blip();
+      audio.vibrate(50);
+      net.sendSfxEvent('paddleHit');
+    } else if (ev.type === 'wallHit') {
+      audio.bloop();
+      net.sendSfxEvent('wallHit');
     } else if (ev.type === 'chaosTrigger') {
+      audio.crash();
+      audio.vibrate(80);
       net.sendChaosTrigger({ effect: ev.effect, target: ev.target, durationMs: ev.durationMs });
+      net.sendSfxEvent('chaosTrigger');
     }
   }
 }
@@ -191,6 +204,8 @@ function startMatch() {
   });
   state.input.setCoordinateMap(buildCoordinateMap());
   state.input.onMove(handlePaddleMove);
+
+  audio.init();
 
   startLoop();
 }
@@ -279,7 +294,15 @@ net.onScoreUpdate((score) => {
 });
 
 net.onChaosTrigger((payload) => {
-  console.log('[Main] chaosTrigger:', payload?.effect, 'target:', payload?.target);
+  audio.crash();
+  audio.vibrate(80);
+});
+
+net.onSfxEvent((payload) => {
+  const type = payload && payload.type;
+  if (type === 'paddleHit') { audio.blip(); audio.vibrate(50); }
+  else if (type === 'wallHit') { audio.bloop(); }
+  else if (type === 'chaosTrigger') { audio.crash(); audio.vibrate(80); }
 });
 
 net.onMatchEnd((payload) => {
@@ -325,6 +348,20 @@ dom.btnLobbyBack.addEventListener('click', () => {
 dom.btnRematch.addEventListener('click', () => {
   requestRematch();
 });
+
+function updateMuteIcon() {
+  if (!dom.btnMute) return;
+  dom.btnMute.textContent = audio.isMuted() ? '🔇' : '🔊';
+  dom.btnMute.setAttribute('aria-pressed', String(audio.isMuted()));
+}
+
+if (dom.btnMute) {
+  dom.btnMute.addEventListener('click', () => {
+    audio.toggleMuted();
+    updateMuteIcon();
+  });
+  updateMuteIcon();
+}
 
 function applyUrlAutoJoin() {
   const params = new URLSearchParams(location.search);

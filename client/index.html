@@ -269,6 +269,32 @@
       color: #4b5563;
     }
 
+    #btn-mute {
+      pointer-events: auto;
+      position: absolute;
+      top: 0.5rem;
+      right: 0.75rem;
+      background: transparent;
+      border: 1px solid #4b5563;
+      color: #9ca3af;
+      width: 2.2rem;
+      height: 2.2rem;
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    #btn-mute:active {
+      transform: scale(0.92);
+      border-color: var(--p1);
+      color: var(--p1);
+    }
+
     .result {
       font-size: clamp(2.5rem, 12vw, 6rem);
       font-weight: bold;
@@ -344,6 +370,7 @@
         <span class="sep">·</span>
         <span id="score-p2" class="score p2">0</span>
       </div>
+      <button id="btn-mute" type="button" aria-label="Mute toggle" aria-pressed="false">🔊</button>
     </section>
 
     <section id="screen-endgame" class="screen" data-interactive="true">
