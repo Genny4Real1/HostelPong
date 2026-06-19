@@ -1,6 +1,13 @@
 import { NetworkManager } from './NetworkManager.js';
+import { Game } from './Game.js';
+import { Renderer } from './Renderer.js';
 
 const net = new NetworkManager();
+
+const BROADCAST_HZ = 30;
+let rafId = null;
+let lastTime = 0;
+let broadcastAcc = 0;
 
 const state = {
   screen: 'menu',
@@ -72,6 +79,39 @@ function updateScoreHud(score) {
   if (score.p2 !== undefined) dom.scoreP2.textContent = String(score.p2);
 }
 
+function frame(now) {
+  if (state.screen !== 'game') {
+    rafId = null;
+    return;
+  }
+  const dt = Math.min((now - lastTime) / 1000, 1 / 30);
+  lastTime = now;
+  const game = state.game;
+  if (game) {
+    game.update(dt);
+    if (state.role === 'host') {
+      broadcastAcc += dt;
+      if (broadcastAcc >= 1 / BROADCAST_HZ) {
+        broadcastAcc = 0;
+        net.sendBallState(game.getSnapshot());
+      }
+    }
+    if (state.renderer) state.renderer.draw(game.getSnapshot());
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+function startLoop() {
+  lastTime = performance.now();
+  broadcastAcc = 0;
+  rafId = requestAnimationFrame(frame);
+}
+
+function stopLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
 function startMatch() {
   state.localRematchPressed = false;
   state.opponentRematchPressed = false;
@@ -79,12 +119,13 @@ function startMatch() {
   resetScoreHud();
   showScreen('game');
 
-  if (state.game && typeof state.game.reset === 'function') {
-    state.game.reset();
-    if (state.role === 'host' && typeof state.game.start === 'function') {
-      state.game.start();
-    }
-  }
+  stopLoop();
+  state.game = new Game({ role: state.role });
+  if (!state.renderer) state.renderer = new Renderer(dom.canvas);
+  state.renderer.resize();
+  state.game.reset();
+  if (state.role === 'host') state.game.start();
+  startLoop();
 }
 
 function endMatch(winner) {
@@ -113,12 +154,12 @@ function handleOpponentRematch() {
 }
 
 function leaveToMenu(message) {
+  stopLoop();
   state.role = null;
   state.roomCode = null;
   state.localRematchPressed = false;
   state.opponentRematchPressed = false;
   state.game = null;
-  state.renderer = null;
   state.input = null;
   dom.joinCode.value = '';
   setMenuError(message || '');
@@ -153,6 +194,10 @@ net.onMatchStart((payload) => {
   state.role = payload.role;
   state.roomCode = payload.roomCode;
   startMatch();
+});
+
+net.onBallState((snapshot) => {
+  if (state.game && state.role === 'guest') state.game.applySnapshot(snapshot);
 });
 
 net.onScoreUpdate((score) => {
@@ -215,4 +260,11 @@ function applyUrlAutoJoin() {
 applyUrlAutoJoin();
 net.connect();
 
-window.__hostelPong = { net, state, dom, startMatch, endMatch };
+window.addEventListener('resize', () => {
+  if (state.renderer) state.renderer.resize();
+});
+window.addEventListener('orientationchange', () => {
+  if (state.renderer) setTimeout(() => state.renderer && state.renderer.resize(), 100);
+});
+
+window.__hostelPong = { net, state, dom, startMatch, endMatch, stopLoop };
