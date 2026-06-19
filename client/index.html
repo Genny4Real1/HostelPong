@@ -8,11 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#000000">
   <title>HostelPong</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --p1: #00e5ff;
       --p2: #ff3df0;
       --bg: #000000;
+      --panel: rgba(8, 10, 18, 0.85);
     }
 
     * {
@@ -85,12 +87,272 @@
       pointer-events: none;
       z-index: 10;
     }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .screen[data-interactive="true"] {
+      pointer-events: auto;
+    }
+
+    .title {
+      font-size: clamp(2rem, 7vw, 4rem);
+      letter-spacing: 0.12em;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 8px var(--p1), 0 0 20px var(--p1);
+    }
+
+    .title .accent {
+      color: var(--p2);
+      text-shadow: 0 0 8px var(--p2), 0 0 20px var(--p2);
+    }
+
+    .subtitle {
+      font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+      color: #6b7280;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .btn {
+      pointer-events: auto;
+      background: transparent;
+      border: 2px solid var(--p1);
+      color: var(--p1);
+      padding: 0.9rem 2rem;
+      font-family: inherit;
+      font-size: clamp(0.9rem, 3vw, 1.2rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 6px;
+      text-shadow: 0 0 6px var(--p1);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.25), inset 0 0 10px rgba(0, 229, 255, 0.15);
+      transition: transform 0.1s, box-shadow 0.2s;
+      min-width: 12rem;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.3);
+    }
+
+    .btn.p2 {
+      border-color: var(--p2);
+      color: var(--p2);
+      text-shadow: 0 0 6px var(--p2);
+      box-shadow: 0 0 10px rgba(255, 61, 240, 0.25), inset 0 0 10px rgba(255, 61, 240, 0.15);
+    }
+
+    .btn.p2:active {
+      box-shadow: 0 0 20px rgba(255, 61, 240, 0.6), inset 0 0 16px rgba(255, 61, 240, 0.3);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .code-input {
+      pointer-events: auto;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid var(--p2);
+      color: var(--p2);
+      padding: 0.8rem 1rem;
+      font-family: inherit;
+      font-size: clamp(1.2rem, 5vw, 2rem);
+      letter-spacing: 0.5rem;
+      text-align: center;
+      width: 10rem;
+      border-radius: 6px;
+      text-shadow: 0 0 6px var(--p2);
+      box-shadow: 0 0 10px rgba(255, 61, 240, 0.25);
+      outline: none;
+    }
+
+    .code-input::placeholder {
+      color: rgba(255, 61, 240, 0.4);
+      letter-spacing: 0.5rem;
+    }
+
+    .code-display {
+      font-size: clamp(2.5rem, 10vw, 5rem);
+      letter-spacing: 0.4rem;
+      font-weight: bold;
+      color: var(--p1);
+      text-shadow: 0 0 12px var(--p1), 0 0 30px var(--p1);
+    }
+
+    #qrcode {
+      pointer-events: none;
+      background: #fff;
+      padding: 0.75rem;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    }
+
+    #qrcode img, #qrcode canvas {
+      display: block;
+    }
+
+    .status {
+      font-size: clamp(0.9rem, 3vw, 1.2rem);
+      color: #9ca3af;
+      letter-spacing: 0.08em;
+    }
+
+    .status .dot {
+      display: inline-block;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+      background: var(--p1);
+      margin-right: 0.5rem;
+      animation: blink 1s ease-in-out infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      padding: 0.6rem 1rem;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      font-weight: bold;
+      pointer-events: none;
+      letter-spacing: 0.1rem;
+    }
+
+    .hud .score {
+      color: #fff;
+    }
+
+    .hud .score.p1 {
+      color: var(--p1);
+      text-shadow: 0 0 8px var(--p1);
+    }
+
+    .hud .score.p2 {
+      color: var(--p2);
+      text-shadow: 0 0 8px var(--p2);
+    }
+
+    .hud .sep {
+      color: #4b5563;
+    }
+
+    .result {
+      font-size: clamp(2.5rem, 12vw, 6rem);
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1rem;
+    }
+
+    .result.win {
+      color: var(--p1);
+      text-shadow: 0 0 14px var(--p1), 0 0 40px var(--p1);
+    }
+
+    .result.lose {
+      color: var(--p2);
+      text-shadow: 0 0 14px var(--p2), 0 0 40px var(--p2);
+    }
+
+    .error-msg {
+      color: #ff5a5a;
+      font-size: clamp(0.8rem, 2.5vw, 1rem);
+      letter-spacing: 0.05em;
+      min-height: 1.2em;
+      text-shadow: 0 0 6px rgba(255, 90, 90, 0.5);
+    }
+
+    .back-btn {
+      pointer-events: auto;
+      background: transparent;
+      border: 1px solid #4b5563;
+      color: #9ca3af;
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 4px;
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+    }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
 
-  <div id="ui-shell"></div>
+  <div id="ui-shell">
+
+    <section id="screen-menu" class="screen active" data-interactive="true">
+      <h1 class="title">Hostel<span class="accent">Pong</span></h1>
+      <p class="subtitle">Pong arcade per ostelli · 1v1</p>
+      <div class="btn-row">
+        <button id="btn-create" class="btn">Crea Stanza</button>
+      </div>
+      <div class="btn-row">
+        <input id="join-code" class="code-input" type="text" inputmode="numeric" maxlength="4" placeholder="----" aria-label="Codice stanza">
+        <button id="btn-join" class="btn p2">Unisciti</button>
+      </div>
+      <p id="menu-error" class="error-msg"></p>
+    </section>
+
+    <section id="screen-lobby" class="screen" data-interactive="true">
+      <p class="subtitle">Codice stanza</p>
+      <div id="lobby-code" class="code-display">----</div>
+      <div id="qrcode"></div>
+      <p class="status"><span class="dot"></span>In attesa dell'avversario...</p>
+      <button id="btn-lobby-back" class="back-btn">Annulla</button>
+    </section>
+
+    <section id="screen-game" class="screen">
+      <div class="hud">
+        <span id="score-p1" class="score p1">0</span>
+        <span class="sep">·</span>
+        <span id="score-p2" class="score p2">0</span>
+      </div>
+    </section>
+
+    <section id="screen-endgame" class="screen" data-interactive="true">
+      <div id="result-text" class="result win">WIN</div>
+      <button id="btn-rematch" class="btn">Rematch</button>
+      <p id="rematch-status" class="status"></p>
+    </section>
+
+  </div>
 
   <div id="rotate-overlay">
     <div class="icon">📱</div>
