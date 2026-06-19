@@ -1,6 +1,7 @@
 import { NetworkManager } from './NetworkManager.js';
 import { Game } from './Game.js';
 import { Renderer } from './Renderer.js';
+import { TouchDragInput } from './TouchDragInput.js';
 
 const net = new NetworkManager();
 
@@ -112,6 +113,26 @@ function stopLoop() {
   rafId = null;
 }
 
+function buildCoordinateMap() {
+  const renderer = state.renderer;
+  const canvas = dom.canvas;
+  return (clientY) => {
+    if (!renderer) return clientY;
+    const rect = canvas.getBoundingClientRect();
+    const t = renderer.getTransform();
+    const cssY = (clientY - rect.top) * (canvas.height / rect.height);
+    return (cssY - t.offsetY) / t.scale;
+  };
+}
+
+function handlePaddleMove(y) {
+  const game = state.game;
+  if (!game) return;
+  const key = game.localKey;
+  game.setPaddleY(key, y);
+  if (state.role === 'guest') net.sendPaddleY(y);
+}
+
 function startMatch() {
   state.localRematchPressed = false;
   state.opponentRematchPressed = false;
@@ -120,15 +141,27 @@ function startMatch() {
   showScreen('game');
 
   stopLoop();
+  if (state.input) { state.input.detach(); state.input = null; }
   state.game = new Game({ role: state.role });
   if (!state.renderer) state.renderer = new Renderer(dom.canvas);
   state.renderer.resize();
   state.game.reset();
   if (state.role === 'host') state.game.start();
+
+  state.input = new TouchDragInput();
+  state.input.attach(dom.canvas);
+  state.input.setBounds({
+    fieldHeight: state.game.field.h,
+    paddleHeight: state.game.paddles.p1.h
+  });
+  state.input.setCoordinateMap(buildCoordinateMap());
+  state.input.onMove(handlePaddleMove);
+
   startLoop();
 }
 
 function endMatch(winner) {
+  if (state.input) { state.input.detach(); state.input = null; }
   const isWin = (state.role === 'host' && winner === 'p1') ||
                 (state.role === 'guest' && winner === 'p2');
   dom.resultText.textContent = isWin ? 'WIN' : 'LOSE';
@@ -155,12 +188,12 @@ function handleOpponentRematch() {
 
 function leaveToMenu(message) {
   stopLoop();
+  if (state.input) { state.input.detach(); state.input = null; }
   state.role = null;
   state.roomCode = null;
   state.localRematchPressed = false;
   state.opponentRematchPressed = false;
   state.game = null;
-  state.input = null;
   dom.joinCode.value = '';
   setMenuError(message || '');
   showScreen('menu');
@@ -198,6 +231,12 @@ net.onMatchStart((payload) => {
 
 net.onBallState((snapshot) => {
   if (state.game && state.role === 'guest') state.game.applySnapshot(snapshot);
+});
+
+net.onPaddleInput((payload) => {
+  if (state.game && state.role === 'host' && typeof payload.y === 'number') {
+    state.game.setPaddleY(state.game.opponentKey, payload.y);
+  }
 });
 
 net.onScoreUpdate((score) => {

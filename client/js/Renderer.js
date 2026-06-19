@@ -7,10 +7,22 @@ export class Renderer {
 
   resize() {
     const dpr = window.devicePixelRatio || 1;
+    this._dpr = dpr;
     const cssW = this.canvas.clientWidth || window.innerWidth;
     const cssH = this.canvas.clientHeight || window.innerHeight;
     this.canvas.width = Math.round(cssW * dpr);
     this.canvas.height = Math.round(cssH * dpr);
+    this._cssW = cssW;
+    this._cssH = cssH;
+  }
+
+  getTransform(fieldW = 1000, fieldH = 600) {
+    const cw = this.canvas.width;
+    const ch = this.canvas.height;
+    const scale = Math.min(cw / fieldW, ch / fieldH);
+    const offsetX = (cw - fieldW * scale) / 2;
+    const offsetY = (ch - fieldH * scale) / 2;
+    return { scale, offsetX, offsetY, cssW: this._cssW, cssH: this._cssH };
   }
 
   draw(state) {
@@ -19,9 +31,8 @@ export class Renderer {
     const ch = this.canvas.height;
     const fw = state.field.w;
     const fh = state.field.h;
-    const scale = Math.min(cw / fw, ch / fh);
-    const offsetX = (cw - fw * scale) / 2;
-    const offsetY = (ch - fh * scale) / 2;
+    const t = this.getTransform(fw, fh);
+    const { scale, offsetX, offsetY } = t;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#000000';
