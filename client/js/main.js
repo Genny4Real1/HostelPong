@@ -383,7 +383,9 @@ window.addEventListener('orientationchange', () => {
 });
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.register('/sw.js').catch((err) => {
+    console.warn('[SW] registration failed:', err);
+  });
 }
 
 window.__hostelPong = { net, state, dom, startMatch, endMatch, stopLoop };

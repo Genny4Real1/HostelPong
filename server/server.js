@@ -25,6 +25,10 @@ const CLIENT_DIR = join(__dirname, '..', 'client');
 app.use(cors());
 app.use(express.static(CLIENT_DIR));
 
+app.get('*', (req, res) => {
+  res.sendFile(join(CLIENT_DIR, 'index.html'));
+});
+
 const rooms = new Map();
 
 function generateRoomCode() {
