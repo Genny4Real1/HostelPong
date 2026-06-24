@@ -30,9 +30,9 @@ Per testare il multiplayer:
 
 Note per i tester:
 
-- Funziona in **landscape** 
-- Sono supportati **touch drag** (mobile) e tastiera (desktop: W/S per P1, ↑/↓ per P2).
-- Per testare da due postazioni diverse serve che **entrambi** aprano lo stesso URL Railway 
+- Funziona in modalità **landscape** (mobile) 
+- Input supportato: **touch drag**
+- Per testare da due postazioni diverse serve che **entrambi** i dispositivi aprano lo stesso URL 
 - Niente account, niente dati salvati: chiudere la pagina libera la stanza.
 
 ## App installabile (PWA)
@@ -42,9 +42,7 @@ HostelPong è una PWA e può essere installata sulla home del telefono per un'es
 - **Android / Chrome**: dal menu del browser → `Installa app` (oppure `Aggiungi a schermata Home`). Su Chrome appare anche un prompt nativo la prima volta che la PWA soddisfa i criteri di installabilità.
 - **iPhone / Safari**: tocca `Condividi` (icona quadrato con freccia) → `Aggiungi a Home`. iOS non supporta il prompt automatico.
 
-Dopo l'installazione l'app si apre direttamente a tutto schermo, senza barra URL, e mantiene l'orientamento landscape forzato dal manifest.
-
-Per disinstallare: comportamento standard del sistema (long-press sull'icona su iOS, trascina nel cestino su Android).
+Dopo l'installazione l'app si apre direttamente a tutto schermo, senza barra URL, e mantiene l'orientamento landscape.
 
 ## Deploy
 
