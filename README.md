@@ -1,14 +1,12 @@
 # HostelPong
 
-Pong multiplayer 1v1 in tempo reale per ostelli. Crea una stanza, condividi il codice (o il QR), il secondo giocatore si unisce e si gioca.
-
-MVP: due telefoni, scansione QR, partita in 2 secondi.
+Pong multiplayer 1v1 in tempo reale. Crea una stanza, condividi il codice o il QR) e gioca con il tuo compagno di stanza.
+Prova anche gli effetti "Party Mode", tra frigoriferi, palle ubriache, terremoti e tanto altro (in sviluppo).
 
 ## Stack
 
 - Node.js 18+, Express, Socket.IO 4
 - Client: vanilla JS, Canvas, PWA (service worker incluso)
-- Zero database, zero account, zero build step lato client
 
 ## Sviluppo locale
 
@@ -22,7 +20,7 @@ npm start
 
 L'app è deployata su Railway:
 
-**https://<your-app>.up.railway.app**
+https://hostelpong-production.up.railway.app/
 
 Per testare il multiplayer:
 
@@ -32,9 +30,9 @@ Per testare il multiplayer:
 
 Note per i tester:
 
-- Funziona meglio in **landscape** (l'UI mostra un overlay "ruota il dispositivo" in portrait).
+- Funziona in **landscape** 
 - Sono supportati **touch drag** (mobile) e tastiera (desktop: W/S per P1, ↑/↓ per P2).
-- Per testare da due postazioni diverse serve che **entrambi** aprano lo stesso URL Railway (è già pubblico).
+- Per testare da due postazioni diverse serve che **entrambi** aprano lo stesso URL Railway 
 - Niente account, niente dati salvati: chiudere la pagina libera la stanza.
 
 ## Deploy
