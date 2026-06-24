@@ -1,4 +1,4 @@
-# HostelPong
+# HostelPong V1.0
 
 Pong multiplayer 1v1 in tempo reale. Crea una stanza, condividi il codice (o il QR) e gioca con il tuo compagno di stanza.
 Prova anche gli effetti "Party Mode", tra frigoriferi, palle ubriache, terremoti e tanto altro (in sviluppo).
