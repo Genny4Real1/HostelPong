@@ -43,7 +43,11 @@ const dom = {
   scoreP2: document.getElementById('score-p2'),
   resultText: document.getElementById('result-text'),
   btnRematch: document.getElementById('btn-rematch'),
-  rematchStatus: document.getElementById('rematch-status')
+  rematchStatus: document.getElementById('rematch-status'),
+  pwaHint: document.getElementById('pwa-hint'),
+  pwaHintText: document.querySelector('#pwa-hint .pwa-hint-text'),
+  pwaHintAction: document.getElementById('pwa-hint-action'),
+  pwaHintDismiss: document.getElementById('pwa-hint-dismiss')
 };
 
 function showScreen(name) {
@@ -387,5 +391,59 @@ if ('serviceWorker' in navigator) {
     console.warn('[SW] registration failed:', err);
   });
 }
+
+function initPwaInstallHint() {
+  const hint = dom.pwaHint;
+  const action = dom.pwaHintAction;
+  const text = dom.pwaHintText;
+  const dismiss = dom.pwaHintDismiss;
+  if (!hint || !action || !text || !dismiss) return;
+
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isInstalled) return;
+
+  if (localStorage.getItem('pwa-hint-dismissed') === '1') return;
+
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  let deferredPrompt = null;
+
+  const hideHint = () => {
+    hint.hidden = true;
+  };
+
+  dismiss.addEventListener('click', () => {
+    localStorage.setItem('pwa-hint-dismissed', '1');
+    hideHint();
+  });
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    action.hidden = false;
+    text.textContent = 'Installa l\'app per un\'esperienza migliore · ';
+    hint.hidden = false;
+  });
+
+  action.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    action.disabled = true;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    action.disabled = false;
+    if (choice && choice.outcome === 'accepted') {
+      localStorage.setItem('pwa-hint-dismissed', '1');
+    }
+    hideHint();
+  });
+
+  if (isIos) {
+    text.textContent = 'Su iPhone: Condividi → Aggiungi a Home per il fullscreen';
+    hint.hidden = false;
+  }
+}
+
+initPwaInstallHint();
 
 window.__hostelPong = { net, state, dom, startMatch, endMatch, stopLoop };

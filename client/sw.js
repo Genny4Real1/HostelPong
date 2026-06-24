@@ -1,4 +1,4 @@
-const CACHE = 'hostelpong-v3';
+const CACHE = 'hostelpong-v4';
 const PRECACHE = [
   '/',
   '/index.html',

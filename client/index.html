@@ -370,6 +370,56 @@
       letter-spacing: 0.05em;
       pointer-events: none;
     }
+
+    .pwa-hint {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 0.75rem;
+      right: 0.75rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      max-width: 28rem;
+      margin: 0 auto;
+    }
+
+    .pwa-hint[hidden] {
+      display: none;
+    }
+
+    .pwa-hint .pwa-hint-action {
+      pointer-events: auto;
+      background: transparent;
+      border: none;
+      color: var(--p1);
+      font-family: inherit;
+      font-size: inherit;
+      letter-spacing: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .pwa-hint .pwa-hint-dismiss {
+      pointer-events: auto;
+      background: transparent;
+      border: none;
+      color: #4b5563;
+      font-family: inherit;
+      font-size: 0.85rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 0.15rem;
+    }
+
+    .pwa-hint .pwa-hint-dismiss:hover {
+      color: #9ca3af;
+    }
   </style>
 </head>
 <body>
@@ -388,7 +438,12 @@
         <button id="btn-join" class="btn p2">Unisciti</button>
       </div>
       <p id="menu-error" class="error-msg"></p>
-      <p class="version">v0.9</p>
+      <p id="pwa-hint" class="pwa-hint" hidden>
+        <span class="pwa-hint-text">Installa l'app per un'esperienza migliore</span>
+        <button id="pwa-hint-action" class="pwa-hint-action" type="button" hidden>Installa</button>
+        <button id="pwa-hint-dismiss" class="pwa-hint-dismiss" type="button" aria-label="Nascondi suggerimento">&times;</button>
+      </p>
+      <p class="version">v1.0</p>
     </section>
 
     <section id="screen-lobby" class="screen" data-interactive="true">
