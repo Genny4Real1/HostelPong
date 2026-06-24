@@ -382,4 +382,8 @@ window.addEventListener('orientationchange', () => {
   if (state.renderer) setTimeout(() => state.renderer && state.renderer.resize(), 100);
 });
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
 window.__hostelPong = { net, state, dom, startMatch, endMatch, stopLoop };

@@ -6,7 +6,25 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#F0E2C2">
+  <meta name="description" content="Pong multiplayer per ostelli — scansiona il QR e gioca in 2 secondi.">
+
+  <!-- Favicon (multi-size, 16+32+48) -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+
+  <!-- iOS home-screen icon -->
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120.png">
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.webmanifest">
+
   <title>HostelPong</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -336,6 +354,16 @@
       top: 1rem;
       left: 1rem;
     }
+
+    .version {
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.75rem;
+      font-size: 0.7rem;
+      color: #4b5563;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -354,6 +382,7 @@
         <button id="btn-join" class="btn p2">Unisciti</button>
       </div>
       <p id="menu-error" class="error-msg"></p>
+      <p class="version">v0.9</p>
     </section>
 
     <section id="screen-lobby" class="screen" data-interactive="true">
